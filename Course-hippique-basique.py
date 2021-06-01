@@ -69,7 +69,7 @@ def en_couleur(Coul) : print(Coul,end='')
 def en_rouge() : print(CL_RED,end='')
 
 
-def un_cheval(ma_ligne : int) : # ma_ligne commence à 0
+def un_cheval(ma_ligne : int, LONGEUR_COURSE) : # ma_ligne commence à 0
     # move_to(20, 1); print("Le chaval ", chr(ord('A')+ma_ligne), " démarre ...")
     col=1
 
@@ -85,7 +85,7 @@ def un_cheval(ma_ligne : int) : # ma_ligne commence à 0
 #------------------------------------------------
 
 if __name__ == "__main__" :
-    Nb_process=20
+    Nb_process = 20
     mes_process = [0 for i in range(Nb_process)]
 
     LONGEUR_COURSE = 100
@@ -93,7 +93,7 @@ if __name__ == "__main__" :
     curseur_invisible()
 
     for i in range(Nb_process):  # Lancer     Nb_process  processus
-        mes_process[i] = Process(target=un_cheval, args= (i,))
+        mes_process[i] = Process(target=un_cheval, args= (i,LONGEUR_COURSE))
         mes_process[i].start()
 
     move_to(Nb_process+10, 1)
