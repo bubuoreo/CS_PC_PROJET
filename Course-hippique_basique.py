@@ -44,7 +44,7 @@ CL_WHITE="\033[01;37m"                  #  Blanc
 
 #-------------------------------------------------------
 
-from multiprocessing import Process, Value, Lock
+from multiprocessing import Process, Semaphore, Value, Lock, Array
 import os, time,math, random, sys
 from array import array  # Attention : différent des 'Array' des Process
 
@@ -68,41 +68,74 @@ def en_couleur(Coul) : print(Coul,end='')
 def en_rouge() : print(CL_RED,end='')
 
 
-def un_cheval(ma_ligne : int,LONGEUR_COURSE) : # ma_ligne commence à 0
+def un_cheval(ma_ligne : int,LONGEUR_COURSE,mutex,Lpos,keep_running) : # ma_ligne commence à 0
     # move_to(20, 1); print("Le chaval ", chr(ord('A')+ma_ligne), " démarre ...")
     col=1
 
-    while col < LONGEUR_COURSE and keep_running.value :
+    while col <= LONGEUR_COURSE and keep_running.value :
+        if col == LONGEUR_COURSE:
+            mutex.acquire()
+            move_to(30,30)
+            print(chr(ord('A')+ma_ligne),"fini 1 er")
+            keep_running.value = False
+            mutex.release()
+        mutex.acquire();
         move_to(ma_ligne+1,col) # pour effacer toute ma ligne
         erase_line_from_beg_to_curs()
         en_couleur(lyst_colors[ma_ligne%len(lyst_colors)])
         print('('+chr(ord('A')+ma_ligne)+'>')
-
+        Lpos[ma_ligne] = col
+        mutex.release()
         col+=1
         time.sleep(0.1 * random.randint(1,5))
+
+
+def arbitrage(Lpos,mutex,keep_running):
+    time.sleep(1)
+    while keep_running.value:
+        mutex.acquire()
+        maxL = max(Lpos[:])
+        indexPremier = Lpos[:].index(maxL)
+        minL = min(Lpos[:])
+        indexDernier = Lpos[:].index(minL)
+        move_to(25,30)
+        en_couleur(lyst_colors[0])
+        print("Le premier cheval est le cheval ",chr(ord('A')+indexPremier)," en position ", maxL," et le cheval ",chr(ord('A')+indexDernier)," est dernier en position ",minL)
+        mutex.release()
+    mutex.acquire()
+    maxL = max(Lpos[:])
+    indexPremier = Lpos[:].index(maxL)
+    minL = min(Lpos[:])
+    indexDernier = Lpos[:].index(minL)
+    move_to(25,30)
+    en_couleur(lyst_colors[0])
+    print("Le premier cheval est le cheval ",chr(ord('A')+indexPremier)," en position ", maxL," et le cheval ",chr(ord('A')+indexDernier)," est dernier en position ",minL)
+    mutex.release()
 
 #------------------------------------------------
 
 if __name__ == "__main__" :
     Nb_process=20
     mes_process = [0 for i in range(Nb_process)]
+    mutex = Semaphore(1)
+    Lpos = Array('b',20)
 
-    LONGEUR_COURSE = 100
+    LONGEUR_COURSE = 30
     effacer_ecran()
     curseur_invisible()
 
     for i in range(Nb_process):  # Lancer     Nb_process  processus
-        mes_process[i] = Process(target=un_cheval, args= (i,LONGEUR_COURSE))
+        mes_process[i] = Process(target=un_cheval, args= (i,LONGEUR_COURSE,mutex,Lpos,keep_running))
         mes_process[i].start()
 
     move_to(Nb_process+10, 1)
     print("tous lancés")
-
-
+    arbitre = Process(target=arbitrage, args=(Lpos,mutex,keep_running))
+    arbitre.start()
 
     for i in range(Nb_process): mes_process[i].join()
 
-    move_to(24, 1)
+    move_to(31, 1)
     curseur_visible()
     print("Fini")
-
+    
