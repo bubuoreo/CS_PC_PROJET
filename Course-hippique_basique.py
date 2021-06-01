@@ -2,7 +2,8 @@
 # DATE : 01/06/2021 
 # TODO :
 # - GESTION DES EX AEQUOS
-# - CHANGEMENT DU CHEVAL 
+# - CHANGEMENT DU CHEVAL
+# - LE PROGRAMME DOIT IL SE FINIR QUAND LE DERNIER EST ARRIVE ? 
 
 CLEARSCR="\x1B[2J\x1B[;H"        #  Clear SCReen
 CLEAREOS = "\x1B[J"                #  Clear End Of Screen
@@ -116,23 +117,25 @@ def arbitrage(Lpos,mutex,keep_running,bet):
     if bet == chr(ord('A')+indexPremier):
         mutex.acquire()
         move_to(31,30)
+        en_couleur(lyst_colors[0])
         print("Vous avez gagné votre pari")
         mutex.release()
     else:
         mutex.acquire()
         move_to(31,30)
+        en_couleur(lyst_colors[0])
         print("Vous avez perdu votre pari")
         mutex.release()
 
 #------------------------------------------------
 
 if __name__ == "__main__" :
-    Nb_process=20
+    Nb_process = 20
     mes_process = [0 for i in range(Nb_process)]
     mutex = Semaphore(1)
     Lpos = Array('b',20)
 
-    LONGEUR_COURSE = 30
+    LONGEUR_COURSE = 100
     ListeChevaux = list(chr(ord('A')+i) for i in range(Nb_process))
     print("les chevaux sur la ligne de départ sont :", ListeChevaux)
     while True:
@@ -161,5 +164,6 @@ if __name__ == "__main__" :
 
     move_to(31, 1)
     curseur_visible()
+    en_couleur(lyst_colors[0])
     print("Fini")
     
