@@ -75,9 +75,10 @@ def un_cheval(ma_ligne : int,LONGEUR_COURSE,mutex,Lpos,keep_running) : # ma_lign
     while col <= LONGEUR_COURSE and keep_running.value :
         if col == LONGEUR_COURSE:
             mutex.acquire()
-            move_to(30,30)
-            print(chr(ord('A')+ma_ligne),"fini 1 er")
             keep_running.value = False
+            move_to(30,30)
+            en_couleur(lyst_colors[0])
+            print(chr(ord('A')+ma_ligne),"fini 1 er")
             mutex.release()
         mutex.acquire();
         move_to(ma_ligne+1,col) # pour effacer toute ma ligne
@@ -90,7 +91,7 @@ def un_cheval(ma_ligne : int,LONGEUR_COURSE,mutex,Lpos,keep_running) : # ma_lign
         time.sleep(0.1 * random.randint(1,5))
 
 
-def arbitrage(Lpos,mutex,keep_running):
+def arbitrage(Lpos,mutex,keep_running,bet):
     time.sleep(1)
     while keep_running.value:
         mutex.acquire()
@@ -111,6 +112,16 @@ def arbitrage(Lpos,mutex,keep_running):
     en_couleur(lyst_colors[0])
     print("Le premier cheval est le cheval ",chr(ord('A')+indexPremier)," en position ", maxL," et le cheval ",chr(ord('A')+indexDernier)," est dernier en position ",minL)
     mutex.release()
+    if bet == chr(ord('A')+indexPremier):
+        mutex.acquire()
+        move_to(31,30)
+        print("Vous avez gagné votre pari")
+        mutex.release()
+    else:
+        mutex.acquire()
+        move_to(31,30)
+        print("Vous avez perdu votre pari")
+        mutex.release()
 
 #------------------------------------------------
 
@@ -121,8 +132,20 @@ if __name__ == "__main__" :
     Lpos = Array('b',20)
 
     LONGEUR_COURSE = 30
+    ListeChevaux = list(chr(ord('A')+i) for i in range(Nb_process))
+    print("les chevaux sur la ligne de départ sont :", ListeChevaux)
+    while True:
+        pari = input("Quel cheval va gagner selon vous ?")
+        try:
+            if pari in ListeChevaux:
+                break
+            raise Exception
+        except:
+            print("Ce cheval n'est pas sur la grille de départ")
     effacer_ecran()
     curseur_invisible()
+
+    
 
     for i in range(Nb_process):  # Lancer     Nb_process  processus
         mes_process[i] = Process(target=un_cheval, args= (i,LONGEUR_COURSE,mutex,Lpos,keep_running))
@@ -130,7 +153,7 @@ if __name__ == "__main__" :
 
     move_to(Nb_process+10, 1)
     print("tous lancés")
-    arbitre = Process(target=arbitrage, args=(Lpos,mutex,keep_running))
+    arbitre = Process(target=arbitrage, args=(Lpos,mutex,keep_running,pari))
     arbitre.start()
 
     for i in range(Nb_process): mes_process[i].join()
