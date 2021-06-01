@@ -1,7 +1,8 @@
-# Juin 2019
-# Cours hippique
-# Version très basique, sans mutex sur l'écran, sans arbitre, sans annoncer le gagant, ... ...
-# Sans mutex écran
+# BURLOT ALEXANDRE - ROTH LUCAS
+# DATE : 01/06/2021 
+# TODO :
+# - GESTION DES EX AEQUOS
+# - CHANGEMENT DU CHEVAL 
 
 CLEARSCR="\x1B[2J\x1B[;H"        #  Clear SCReen
 CLEAREOS = "\x1B[J"                #  Clear End Of Screen
