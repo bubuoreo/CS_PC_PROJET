@@ -1,8 +1,9 @@
 import math, random
 from array import array
+import time
 
 def merge(left, right):
-    tableau = array('i', [])  # tableau vide qui reçoit les résultats
+    tableau = array('i', [])  # tableau vide qui reÃ©oit les rÃ©sultats
     while len(left) > 0 and len(right) > 0:
         if left[0] < right[0]: tableau.append(left.pop(0))
         else: tableau.append(right.pop(0))
@@ -26,11 +27,12 @@ def version_de_base(N):
     start=time.time()
     Tab = merge_sort(Tab)
     end=time.time()
-    print("Après : ", Tab)
+    print("AprÃ©s : ", Tab)
     print("Le temps avec 1 seul Process = %f pour un tableau de %d eles " % ((end-start)*1000, N))
     
-    print("Vérifions que le tri est correct --> ", end='')
+    print("VÃ©rifions que le tri est correct --> ", end='')
     try :
         assert(all([(Tab[i] <= Tab[i+1]) for i in range(N-1)]))
         print("Le tri est OK !")
-    except : print(" Le tri n'a pas marché !")
+    except : print(" Le tri n'a pas marchÃ© !")
+
