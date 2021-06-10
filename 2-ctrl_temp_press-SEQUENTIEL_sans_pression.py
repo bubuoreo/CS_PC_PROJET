@@ -161,147 +161,191 @@ def placer_le_cadre() :
     move_to(x_coin_B_G_cadre, y_coin_B_G_cadre) 
     print(ligne_traits)    
     
-def ecrire_donnees_temp(val_consigne = 21.0, val_actuelle = 0.0):
+def ecrire_donnees_temp(val_temperature,x_coin_H_G_Temperature,y_coin_H_G_Temperature,Cste_Consigne_Temperature):
     move_to(x_coin_H_G_Temperature, y_coin_H_G_Temperature) 
     print("* Température ")
     move_to(x_coin_H_G_Temperature+1, y_coin_H_G_Temperature+3) 
-    print("-Consigne : ", round(val_consigne,2))
+    print("-Consigne : ", round(Cste_Consigne_Temperature,2))
     move_to(x_coin_H_G_Temperature+2, y_coin_H_G_Temperature+3) 
-    print("-Actuel : ", round(val_actuelle,2)   )
+    print("-Actuel : ", round(val_temperature.value,2))
     
-def ecrire_donnees_pression(val_consigne = 2.0, val_actuelle = 0.0):
+def ecrire_donnees_pression(Cste_Alpha,sem_pression,val_pression,val_temperature,x_coin_H_G_Pression,y_coin_H_G_Pression,Cste_Consigne_Pression):
     move_to(x_coin_H_G_Pression, y_coin_H_G_Pression)
     print("* Pression ")
     move_to(x_coin_H_G_Pression+1, y_coin_H_G_Pression+3) 
-    print("-Consigne : ", val_consigne)
+    print("-Consigne : ", Cste_Consigne_Pression)
     #===================================================
-    # Lien T et P    
-    val_pression = (val_temperature + 273.15) * Cste_Alpha
+    # Lien T et P  
+     
+    pression = (val_temperature.value + 273.15) * Cste_Alpha
     move_to(x_coin_H_G_Pression+2, y_coin_H_G_Pression+3) 
-    print("-Actuel : ", round(val_actuelle,2))       
+    
+    print("-Actuel : ", round(pression,2))       
+    
   
-def ecrire_etats_T_P_et_rel_TP(chauffage_is_on=False, pompe_is_on=False) :
+def ecrire_etats_T_P_et_rel_TP(chauffage_is_on, pompe_is_on) :
     move_to(x_coin_H_G_Chauffage, y_coin_H_G_Chauffage) 
-    print("* Etat Chauffage :", "True " if chauffage_is_on else "False") 
+    print("* Etat Chauffage :", "True " if chauffage_is_on.value else "False") 
     move_to(x_coin_H_G_Pompe, y_coin_H_G_Pompe) 
-    print("* Etat Pompe :", "True " if pompe_is_on else "False")   
+    print("* Etat Pompe :", "True " if pompe_is_on.value else "False")   
     move_to(x_coin_H_G_relation_T_P, y_coin_H_G_relation_T_P) 
     print("* Relation T/P :", relation_entre_T_et_P_courte) 
  
 #------------- Les taches / processus -------------------------
-def tache_capteur_pression() :  
-    global chauffage_is_on, val_temperature, pompe_is_on, val_pression
-
-    # La pression
-    if (not pompe_is_on) : # on augmente la température de 10% par unité de temps   
-        val_pression -=1 # KPa
-    else :
-        val_pression*=0.1 # On suppose que la pression augmente de 10% par unité de temps. Vol=Cste
-    
-def tache_capteur_temperature() :  
-    global chauffage_is_on, val_temperature, pompe_is_on, val_pression
-        
-    delta=0.0                #===================================================
-    # Lien T et P    
-    val_pression = (val_temperature + 273.15) * Cste_Alpha
-
-    if (not chauffage_is_on) : # on baisse la température de 0.1 par seconde
-        delta=0.5-random.random()
-        if delta > 0 : delta=-0.3            
-
-    else :
-        delta=0.2
-
-    val_temperature+=delta
-
-    ecrire_um_message("tache_capteur_temperature", "Chauffage allumé" if chauffage_is_on else "Chauffage eteint")      
-        
-        
-def tache_screen() :
-    global chauffage_is_on, val_temperature, pompe_is_on, val_pression
- 
-    ecrire_donnees_temp(Cste_Consigne_Temperature, val_temperature)
-    ecrire_donnees_pression(Cste_Consigne_Pression, val_pression)
-    ecrire_etats_T_P_et_rel_TP(chauffage_is_on, pompe_is_on) 
-
-
-def tache_controleur_central():  
-    global chauffage_is_on, val_temperature, pompe_is_on, val_pression
-    
-    if (Cste_Consigne_Temperature > val_temperature) : chauffage_is_on=True
-        # if ( not value_Chauffage_on) :chauffage_is_on=Truechauffage_is_on=True
-        
-    else : chauffage_is_on=False # consigne_temperature  <=  val_temperature
-        # if (chauffage_is_on) :  chauffage_is_on=Fal"j'teints"se
-            
-    if (Cste_Consigne_Pression > val_pression) : pompe_is_on=True
-        # if ( not value_Chauffage_on) :chauffage_is_on=Truechauffage_is_on=True
-        
-    else : pompe_is_on=False # consigne_temperature  <=  val_temperature
-        # if (chauffage_is_on) :  chauffage_is_on=False    
-    
-    if (val_temperature >= max_temperature_possible) :
-        val_temperature = max_temperature_possible
-        chauffage_is_on=False
-    if (val_temperature < min_temperature_possible) :
-        val_temperature = min_temperature_possible
-        chauffage_is_on=True      #===================================================
-    # Lien T et P    
-    val_pression = (val_temperature + 273.15) * Cste_Alpha
-        
-    if (val_pression >= max_pression_possible) :
-        val_pression = max_pression_possible
-        pompe_is_on=False
-    if (val_pression < min_pression_possible) :
-        val_pression = min_pression_possible
-        pompe_is_on=True  
-        
-    
-    #===================================================
-    # Lien T et P    
-    val_pression = (val_temperature + 273.15) * Cste_Alpha
-    #===================================================
+def tache_capteur_pression(chauffage_is_on, val_temperature, pompe_is_on, val_pression,sem_temperature,sem_pression,sem_chauffage_is_on,sem_pompe_is_on,semS,semPV) :  
    
-    
-    ecrire_um_message("tache_controleur_central : Pompe" , " --> j'allume" if pompe_is_on else "--> j'teints")
-    ecrire_um_message("tache_controleur_central : Chauffage", " --> j'allume" if chauffage_is_on else "--> j'teints")
-    
+    # La pression
+    while True :
+        time.sleep(1)
+        sem_pression.acquire()
+        pression = val_pression.value
+        sem_pression.release()
+        sem_pompe_is_on.acquire()
+        pompe_on=pompe_is_on.value
+        sem_pompe_is_on.release()
+
+        if (not pompe_on) : # on augmente la température de 10% par unité de temps  
+            pression -=1 # KPa
+        else :
+            pression *=0.1 # On suppose que la pression augmente de 10% par unité de temps. Vol=Cste
+        
+        sem_pression.acquire()
+        val_pression.value = pression 
+        sem_pression.release()
+
+        semS.release()
+        semPV.release()
+
+def tache_capteur_temperature(chauffage_is_on, val_temperature, pompe_is_on, val_pression,sem_temperature,sem_pression,sem_chauffage_is_on,sem_pompe_is_on,Cste_Alpha,semS) :  
+    while True :
+        time.sleep(1)     
+        delta=0.0                #===================================================
+        # Lien T et P 
+         
+        sem_temperature.acquire()
+        temperature=val_temperature.value
+        sem_temperature.release()
+
+        pression = ( temperature + 273.15) * Cste_Alpha
+
+        sem_pression.acquire()
+        val_pression.value = pression
+        sem_pression.release()  
+
+        sem_chauffage_is_on.acquire()
+        chauffage_on = chauffage_is_on.value
+        sem_chauffage_is_on.release()
+
+        if (not chauffage_on) : # on baisse la température de 0.1 par seconde
+            delta=0.5-random.random()
+            if delta > 0 : delta=-0.3            
+        else :
+            delta=0.2
+        
+        temperature=temperature+delta
+        
+        sem_temperature.acquire()
+        val_temperature.value = temperature
+        sem_temperature.release()
+        
+        #ecrire_um_message("tache_capteur_temperature", "Chauffage allumé" if chauffage_is_on else "Chauffage eteint")              
+        
+        semS.release()    
+        
+def tache_screen(chauffage_is_on, val_temperature, pompe_is_on, val_pression,sem_temperature,sem_pression,sem_chauffage_is_on,sem_pompe_is_on,Cste_Consigne_Temperature,Cste_Consigne_Pression,semS) :
+    while True :
+        time.sleep(1)
+        semS.acquire()
+        semS.acquire()
+        sem_temperature.acquire()
+        sem_pression.acquire()
+        sem_chauffage_is_on.acquire()
+        sem_pompe_is_on.acquire()
+        placer_le_cadre()
+        curseur_invisible()
+        ecrire_donnees_temp(val_temperature,x_coin_H_G_Temperature,y_coin_H_G_Temperature,Cste_Consigne_Temperature)
+        ecrire_donnees_pression(Cste_Alpha,sem_pression,val_pression,val_temperature,x_coin_H_G_Pression,y_coin_H_G_Pression,Cste_Consigne_Pression)
+        ecrire_etats_T_P_et_rel_TP(chauffage_is_on, pompe_is_on) 
+        sem_pompe_is_on.release()
+        sem_chauffage_is_on.release()
+        sem_pression.release()
+        sem_temperature.release()
+
+
+def tache_controleur_central(chauffage_is_on, val_temperature, pompe_is_on, val_pression,semPV,sem_pression,sem_temperature,sem_chauffage_is_on,sem_pompe_is_on):  
+    while True :
+        time.sleep(1)
+        semPV.acquire()
+        sem_temperature.acquire()
+        sem_pression.acquire()
+        sem_chauffage_is_on.acquire()
+        sem_pompe_is_on.acquire()
+        
+        if (Cste_Consigne_Temperature > val_temperature.value) : chauffage_is_on.value=True
+            # if ( not value_Chauffage_on) :chauffage_is_on=Truechauffage_is_on=True
+            
+        else : chauffage_is_on.value=False # consigne_temperature  <=  val_temperature
+            # if (chauffage_is_on) :  chauffage_is_on=Fal"j'teints"se
+                
+        if (Cste_Consigne_Pression > val_pression.value) : pompe_is_on.value=True
+            # if ( not value_Chauffage_on) :chauffage_is_on=Truechauffage_is_on=True
+            
+        else : pompe_is_on.value=False # consigne_temperature  <=  val_temperature
+            # if (chauffage_is_on) :  chauffage_is_on=False    
+        
+        if (val_temperature.value >= max_temperature_possible) :
+            val_temperature.value = max_temperature_possible
+            chauffage_is_on.value=False
+        if (val_temperature.value < min_temperature_possible) :
+            val_temperature.value = min_temperature_possible
+            chauffage_is_on.value=True      #===================================================
+        # Lien T et P    
+        val_pression.value = (val_temperature.value + 273.15) * Cste_Alpha
+            
+        if (val_pression.value >= max_pression_possible) :
+            val_pression.value = max_pression_possible
+            pompe_is_on.value=False
+        if (val_pression.value < min_pression_possible) :
+            val_pression.value = min_pression_possible
+            pompe_is_on.value=True 
+            
+        
+        #ecrire_um_message("tache_controleur_central : Pompe" , " --> j'allume" if pompe_is_on.value else "--> j'teints")
+        #ecrire_um_message("tache_controleur_central : Chauffage", " --> j'allume" if chauffage_is_on.value else "--> j'teints")
+        
+        sem_pompe_is_on.release()
+        sem_chauffage_is_on.release()
+        sem_pression.release()
+        sem_temperature.release()
     
     
 if __name__ == "__main__" :
-    global chauffage_is_on, val_temperature, pompe_is_on, val_pression
-    val_temperature=Temp_init
-    val_pression=Pression_init
-
-    chauffage_is_on=chauffage_init_on
     
-    placer_le_cadre()
-    ecrire_donnees_temp()
-    ecrire_donnees_pression()
-    ecrire_etats_T_P_et_rel_TP()
-    liste_process=[]
+    val_temperature = mp.Value('f', Temp_init)
+    val_pression = mp.Value('f',Pression_init)
+    pompe_is_on = mp.Value('b',Pompe_init_on)
+    chauffage_is_on = mp.Value('b', chauffage_init_on)
 
-    curseur_invisible()
+    sem_temperature = mp.Lock()
+    sem_pression = mp.Lock()
+    sem_pompe_is_on = mp.Lock()
+    sem_chauffage_is_on = mp.Lock()
 
+    semS = mp.Semaphore(0)
+    semPV = mp.Semaphore(0)
 
-    pompe_is_on = Pompe_init_on
+    processT = mp.Process(target=tache_capteur_temperature,args=(chauffage_is_on, val_temperature, pompe_is_on, val_pression,sem_temperature,sem_pression,sem_chauffage_is_on,sem_pompe_is_on,Cste_Alpha,semS))
+    processP = mp.Process(target=tache_capteur_pression,args=(chauffage_is_on, val_temperature, pompe_is_on, val_pression,sem_temperature,sem_pression,sem_chauffage_is_on,sem_pompe_is_on,semS,semPV))
+    processS = mp.Process(target=tache_screen,args=(chauffage_is_on, val_temperature, pompe_is_on, val_pression,sem_temperature,sem_pression,sem_chauffage_is_on,sem_pompe_is_on,Cste_Consigne_Temperature,Cste_Consigne_Pression,semS))
+    processC = mp.Process(target=tache_controleur_central,args=(chauffage_is_on, val_temperature, pompe_is_on, val_pression,semPV,sem_pression,sem_temperature,sem_chauffage_is_on,sem_pompe_is_on))
 
-
-    tache_screen() # Première appel pour la mise en place des affichages
-    while True : 
-        tache_capteur_temperature()
-        tache_capteur_pression
-        tache_controleur_central()
-        tache_screen()
-
-        try : time.sleep(1)
-        except : 
-            os.system("tset;reset") 
-            raise SystemExit('On sort')
-
-    curseur_visible()
+    processS.start()
+    processT.start()
+    processP.start()
+    processC.start()
     
-    # Fin
-    move_to(ligne_prompt_systeme, col_prompt_systeme)
-    os.system("tset;reset")    
+    processS.join()
+    processT.join()
+    processP.join()
+    processC.join()
     

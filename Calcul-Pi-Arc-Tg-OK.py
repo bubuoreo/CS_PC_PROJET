@@ -8,7 +8,6 @@ from math import *
  
 def arc_tangente(d,f,k,sem,N):
     py = 0
-    print(d,f)
     for i in range(d,f):
         py += 4/(1+ ((i+0.5)/N)**2)
     sem.acquire()
