@@ -58,31 +58,33 @@ def Client(i,nb_c,tableau,lock): # commande à intervalle irrégulier
 
 def Serveur(Q,numero,tableau,lock):
     while True:
-        lock.acquire() # assure qu'il est le seul à écrire dans le tampon
-        # Le serveur prend connaissance de la commande en première position du tableau
-        num_commande = tableau[0]
-        plat = tableau[1]
-        tableau[0] = -1
-        tableau[1] = -1
-
-        # le serveur réorganise le tableau correctement en commançant à l'indice 2
-        indice = 2
-        while indice < (len(tableau[:])):
-            if tableau[indice] == -1:
-                tableau[indice-2] = tableau[indice]
-                tableau[indice-1] = tableau[indice+1]
-                break
-            elif indice > (len(tableau[:])-2):
-                pass
-            else:
-                tableau[indice] = tableau[indice+2]
-                tableau[indice+1] = tableau[indice+3]
-            indice += 2
-        lock.release() # laisse la place à un autre serveur libre
-
-        if (num_commande,plat) == (-1,-1):
+        if (tableau[0] == -1) and (tableau[1] == -1):
             Q.put((-1,-1,numero,-1))
+            pass
         else:
+            lock.acquire() # assure qu'il est le seul à écrire dans le tampon
+            # Le serveur prend connaissance de la commande en première position du tableau
+            num_commande = tableau[0]
+            plat = tableau[1]
+            print("serveur numero (",numero,") à vu les infos (",num_commande,plat,")")
+            tableau[0] = -1
+            tableau[1] = -1
+
+            # le serveur réorganise le tableau correctement en commançant à l'indice 2
+            indice = 2
+            while indice < (len(tableau[:])):
+                if tableau[indice] == -1:
+                    tableau[indice-2] = tableau[indice]
+                    tableau[indice-1] = tableau[indice+1]
+                    break
+                elif indice > (len(tableau[:])-2):
+                    pass
+                else:
+                    tableau[indice] = tableau[indice+2]
+                    tableau[indice+1] = tableau[indice+3]
+                indice += 2
+            lock.release() # laisse la place à un autre serveur libre
+
             Q.put((num_commande,plat,numero,'preparation'))
             time.sleep(random.randint(5,10))
             Q.put((num_commande,plat,numero,'servie'))
@@ -93,26 +95,30 @@ def Major_dHomme(Q,tableau,nb_serveurs):
         tuple_arguments = Q.get()
         ident,plat,num_serveur,etat = tuple_arguments
         if etat == 'preparation':
-            move_to(num_serveur,10)
-            print(f"Le serveur {num_serveur} prépare la commande ({ident,chr(plat)})        ")
+            print(f"Le serveur {num_serveur} prépare la commande ({ident,plat})        ")
         elif etat == 'servie':
-            move_to(num_serveur+3,10)
-            print(f"Le serveur {num_serveur} sert la commande ({ident,chr(plat)})           ")
-        elif etat == -1:
-            move_to(num_serveur,10)
-            print("                                                                         ")
+            print(f"Le serveur {num_serveur} sert la commande ({ident,plat})           ")
+        # if etat == 'preparation':
+        #     move_to(num_serveur,10)
+        #     print(f"Le serveur {num_serveur} prépare la commande ({ident,chr(plat)})        ")
+        # elif etat == 'servie':
+        #     move_to(nb_serveurs+3,10)
+        #     print(f"Le serveur {num_serveur} sert la commande ({ident,chr(plat)})           ")
+        # elif etat == -1:
+        #     move_to(num_serveur,10)
+        #     print("                                                                         ")
         
-        # la liste d'attente fonctionne
-        liste_attente = []
-        for indice in range(0,len(tableau[:])-1,2):
-            if tableau[indice] != -1:
-                liste_attente.append((tableau[indice],tableau[indice+1]))
-        move_to(nb_serveurs+1,10)
-        print("Les commandes clients en attente :",liste_attente,"                                                     ")
-        move_to(nb_serveurs+2,10)
-        print("Nombres de commandes attente :",len(liste_attente),"              ")
-        move_to(nb_serveurs+4,10)
-        print(tableau[:])
+        # # la liste d'attente fonctionne
+        # liste_attente = []
+        # for indice in range(0,len(tableau[:])-1,2):
+        #     if tableau[indice] != -1:
+        #         liste_attente.append((tableau[indice],tableau[indice+1]))
+        # move_to(nb_serveurs+1,10)
+        # print("Les commandes clients en attente :",liste_attente,"                                                     ")
+        # move_to(nb_serveurs+2,10)
+        # print("Nombres de commandes attente :",len(liste_attente),"              ")
+        # move_to(nb_serveurs+4,10)
+        # print(tableau[:])
 
 
 
@@ -128,16 +134,16 @@ if __name__ == '__main__':
     tableau_commandes[0] = 127
     tableau_commandes[1] = ord('A')
     accesseur = mp.Lock()
-    effacer_ecran()
-    curseur_invisible()
+    # effacer_ecran()
+    # curseur_invisible()
     pile = mp.Queue()
 
     Lprocess = [mp.Process(target=Client,args=((i+1)*100,nb_client,tableau_commandes,accesseur)) for i in range(nb_client)]
-    Lprocess.extend([mp.Process(target=Serveur,args=(pile,i,tableau_commandes,accesseur)) for i in range(nb_serveurs)])
+    Lprocess.extend([mp.Process(target=Serveur,args=(pile,i+1,tableau_commandes,accesseur)) for i in range(nb_serveurs)])
     Lprocess.append(mp.Process(target=Major_dHomme,args=(pile,tableau_commandes,nb_serveurs)))
     for p in Lprocess:
         p.start()
     for p in Lprocess:
         p.join()
     
-    curseur_visible()
+    # curseur_visible()
