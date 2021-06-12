@@ -6,7 +6,6 @@
 # -  timer pour mettre fin au service
 
 import multiprocessing as mp
-from multiprocessing.queues import Queue
 import signal, sys, time, random
 
 
@@ -33,28 +32,32 @@ def Client(i,tableau,lock): # commande à intervalle irrégulier
             else:
                 tableau[indice] = i//100
                 tableau[indice+1] = ord('A')+random.randint(0,25)
-                # print("commande à l'indice",indice,"du client",tableau[indice],"pour le plat",tableau[indice+1])
                 break
         lock.release() # laisse la place à un autre client qui souhaiterai commander
 
 
 def Serveur(Q,numero,tableau,lock):
-    deja_dit_rien_faire = False
+    deja_dit_rien_faire = False # variable pour ne pas remplir la queue de messages indiquant qu'il est libre
     while True:
         lock.acquire() # assure qu'il est le seul à écrire dans le tampon
+        
+        # si il n'y à rien à la première place du tableau et que le serveur n'a jamais indiqué au major d'homme qu'il était libre
         if (tableau[0] == -1) and (deja_dit_rien_faire == False):
-            Q.put((-1,-1,numero,-1))
+            Q.put((-1,-1,numero,-1)) # transmet au major d'homme son état ( -1 = serveur qui ne fait rien )
             lock.release() # laisse la place à un autre serveur libre
-            deja_dit_rien_faire = True
+            deja_dit_rien_faire = True # memorise que le serveur à déja dit qu'il ne faisait rien
+        
+        # Si il y à une commande à la première place du tableau
         elif tableau[0] != -1:
-            deja_dit_rien_faire = False
-            # Le serveur prend connaissance de la commande en première position du tableau
+            deja_dit_rien_faire = False # réinitialise la variable
+
+            # Le serveur prend connaissance de la commande en première position du tableau et y met une 
             num_commande = tableau[0]
             plat = tableau[1]
-            # print("serveur numero (",numero,") à vu les infos (",num_commande,plat,")")
             tableau[0] = -1
             tableau[1] = -1
-            # le serveur réorganise le tableau correctement en commançant à l'indice 2
+
+            # le serveur décale toutes les commandes d'un pas en avant dans le tableau afin qu'ils soit bien pour les serveurs suivants
             indice = 0
             while indice <= (len(tableau[:])-2):
                 if tableau[indice+2] == -1:
@@ -67,46 +70,40 @@ def Serveur(Q,numero,tableau,lock):
                 indice += 2
             lock.release() # laisse la place à un autre serveur libre
 
-            Q.put((num_commande,plat,numero,'preparation'))
-            time.sleep(random.randint(3,5))
-            Q.put((num_commande,plat,numero,'servie'))
+            Q.put((num_commande,plat,numero,'preparation')) # envoie au major d'homme qu'il s'occupe d'une commande
+            time.sleep(random.randint(3,5)) # simule le tamps de préparation de la commande
+            Q.put((num_commande,plat,numero,'servie')) # envoie au major d'homme qu'il sert une commande
         else:
-            lock.release()
+            lock.release() # laisse la place à un autre serveur libre
 
 
 def Major_dHomme(Q,tableau,nb_serveurs):
     while True:
-        tuple_arguments = Q.get()
-        # print(tuple_arguments)
-        ident,plat,num_serveur,etat = tuple_arguments
-        # if etat == 'preparation':
-        #     print(f"Le serveur {num_serveur} prépare la commande ({ident,plat})        ")
-        # elif etat == 'servie':
-        #     print(f"Le serveur {num_serveur} sert la commande ({ident,plat})           ")
-        # elif etat == -1:
-        #     print(f"Le serveur {num_serveur} ne fait rien")
+        tuple_arguments = Q.get() # recoie les informations des serveurs
+        ident,plat,num_serveur,etat = tuple_arguments # stock chaque valeur de tuple reçu dans une variable
         if etat == 'preparation':
             move_to(num_serveur,10)
-            print(f"Le serveur {num_serveur} prépare la commande ({ident,chr(plat)})        ")
+            print(f"Le serveur {num_serveur} traite la commande ({ident,chr(plat)})         ")
         elif etat == 'servie':
             move_to(nb_serveurs+3,10)
             print(f"Le serveur {num_serveur} sert la commande ({ident,chr(plat)})           ")
-        elif etat == -1:
+        elif etat == -1: # si le serveur est dans l'état libre
             move_to(num_serveur,10)
-            print("le serveur n'a rien à faire                                                                         ")
+            print("                                                                         ")
         
-        # la liste d'attente fonctionne
+        # la liste d'attente qui contient chaque couple (identifiant,plat)
         liste_attente = []
         for indice in range(0,len(tableau[:])-1,2):
             if tableau[indice] != -1:
                 liste_attente.append((tableau[indice],chr(tableau[indice+1])))
         move_to(nb_serveurs+1,10)
-        print("Les commandes clients en attente :",liste_attente,"                                                     ")
+        print("Les commandes clients en attente :",liste_attente,"                                                                ")
         move_to(nb_serveurs+2,10)
         print("Nombres de commandes attente :",len(liste_attente),"              ")
 
-def FinService(signal,frame):
-    move_to(14,10)
+def FinService(signal,frame): # interruption avec un ctrl+c 
+    global nb_serveurs
+    move_to(nb_serveurs+4,10)
     print("Fin du service. Au revoir")
     curseur_visible()
     sys.exit(0)
@@ -119,7 +116,8 @@ if __name__ == '__main__':
     nb_serveurs = 3
     taille_tableau = 50
 
-    # le tableau est défini pour une taille de deux fois la taille demandée car chaque commande prendra deux places dans le tableau
+    # le tableau est défini pour une taille de deux fois la taille demandée 
+    # chaque commande prendra deux places dans le tableau
     # une première place pour le numero du client qui à commandé et le deuxième sera l'ascii du plat commandé
     tableau_commandes = mp.Array('b',[-1 for _ in range(taille_tableau*2)])
     accesseur = mp.Lock() # Lock pour le tableau
