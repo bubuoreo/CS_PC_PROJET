@@ -2,7 +2,11 @@
 # DATE : 01/06/2021 
 # TODO :
 # - GESTION DES EX AEQUOS
-# - CHANGEMENT DU CHEVAL
+# - CHANGEMENT DU CHEVAL par ça :
+#        __
+#   ____//\\
+# /[__A_]
+#  ||  || 
 # - LE PROGRAMME DOIT IL SE FINIR QUAND LE DERNIER EST ARRIVE ? 
 
 CLEARSCR="\x1B[2J\x1B[;H"        #  Clear SCReen
