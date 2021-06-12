@@ -3,82 +3,64 @@
 # -*- coding : 'utf-8' -*- 
 # ASCII de 'A' à 'Z' sont de 65 à 90
 # TODO :
-# -  affichage à vérifier pourquoi il ne marche pas 
+# -  timer pour mettre fin au service
 
 import multiprocessing as mp
 from multiprocessing.queues import Queue
-import random
-import time
-import sys
+import signal, sys, time, random
 
 
 CLEARSCR="\x1B[2J\x1B[;H"        #  Clear SCReen
-CLEAREOS = "\x1B[J"                #  Clear End Of Screen
-CLEARELN = "\x1B[2K"               #  Clear Entire LiNe
-CLEARCUP = "\x1B[1J"               #  Clear Curseur UP
-GOTOYX   = "\x1B[%.2d;%.2dH"       #  Goto at (y,x), voir le code
-
-DELAFCURSOR = "\x1B[K"
-CRLF  = "\r\n"                  #  Retour à la ligne
 
 # VT100 : Actions sur le curseur
 CURSON   = "\x1B[?25h"             #  Curseur visible
 CURSOFF  = "\x1B[?25l"             #  Curseur invisible
 
-# VT100 : Actions sur les caractères affichables
-NORMAL = "\x1B[0m"                  #  Normal
-BOLD = "\x1B[1m"                    #  Gras
-UNDERLINE = "\x1B[4m"               #  Souligné
-
 def effacer_ecran() : print(CLEARSCR,end='')
-    # for n in range(0, 64, 1): print("\r\n",end='')
-
-def erase_line_from_beg_to_curs() :
-    print("\033[1K",end='')
-
 def curseur_invisible() : print(CURSOFF,end='')
 def curseur_visible() : print(CURSON,end='')
 
-def move_to(lig, col) : # No work print("\033[%i;%if"%(lig, col)) # print(GOTOYX%(x,y))
+def move_to(lig, col) :
     print("\033[" + str(lig) + ";" + str(col) + "f",end='')
 
-def Client(i,nb_c,tableau,lock): # commande à intervalle irrégulier
+def Client(i,tableau,lock): # commande à intervalle irrégulier
     while True:
-        time.sleep(random.randint(3,5)) # attente random
+        time.sleep(random.randint(3,10)) # attente random
+        lock.acquire() # assure qu'il est le seul à écrire dans le tampon
         for indice in range(0,len(tableau[:])-1,2): # parcours le tableau avec un pas de 2
             if tableau[indice] != -1: # si commande rentrée à cet emplacement, on passe au couple suivant
                 pass
             else:
-                lock.acquire() # assure qu'il est le seul à écrire dans le tampon
                 tableau[indice] = i//100
                 tableau[indice+1] = ord('A')+random.randint(0,25)
-                lock.release() # laisse la place à un autre client qui souhaiterai commander
+                # print("commande à l'indice",indice,"du client",tableau[indice],"pour le plat",tableau[indice+1])
                 break
+        lock.release() # laisse la place à un autre client qui souhaiterai commander
 
 
 def Serveur(Q,numero,tableau,lock):
+    deja_dit_rien_faire = False
     while True:
-        if (tableau[0] == -1) and (tableau[1] == -1):
+        lock.acquire() # assure qu'il est le seul à écrire dans le tampon
+        if (tableau[0] == -1) and (deja_dit_rien_faire == False):
             Q.put((-1,-1,numero,-1))
-            pass
-        else:
-            lock.acquire() # assure qu'il est le seul à écrire dans le tampon
+            lock.release() # laisse la place à un autre serveur libre
+            deja_dit_rien_faire = True
+        elif tableau[0] != -1:
+            deja_dit_rien_faire = False
             # Le serveur prend connaissance de la commande en première position du tableau
             num_commande = tableau[0]
             plat = tableau[1]
-            print("serveur numero (",numero,") à vu les infos (",num_commande,plat,")")
+            # print("serveur numero (",numero,") à vu les infos (",num_commande,plat,")")
             tableau[0] = -1
             tableau[1] = -1
-
             # le serveur réorganise le tableau correctement en commançant à l'indice 2
-            indice = 2
-            while indice < (len(tableau[:])):
-                if tableau[indice] == -1:
-                    tableau[indice-2] = tableau[indice]
-                    tableau[indice-1] = tableau[indice+1]
+            indice = 0
+            while indice <= (len(tableau[:])-2):
+                if tableau[indice+2] == -1:
+                    tableau[indice] = -1
+                    tableau[indice+1] = -1
                     break
-                elif indice > (len(tableau[:])-2):
-                    pass
                 else:
                     tableau[indice] = tableau[indice+2]
                     tableau[indice+1] = tableau[indice+3]
@@ -86,64 +68,71 @@ def Serveur(Q,numero,tableau,lock):
             lock.release() # laisse la place à un autre serveur libre
 
             Q.put((num_commande,plat,numero,'preparation'))
-            time.sleep(random.randint(5,10))
+            time.sleep(random.randint(3,5))
             Q.put((num_commande,plat,numero,'servie'))
+        else:
+            lock.release()
 
 
 def Major_dHomme(Q,tableau,nb_serveurs):
     while True:
         tuple_arguments = Q.get()
+        # print(tuple_arguments)
         ident,plat,num_serveur,etat = tuple_arguments
-        if etat == 'preparation':
-            print(f"Le serveur {num_serveur} prépare la commande ({ident,plat})        ")
-        elif etat == 'servie':
-            print(f"Le serveur {num_serveur} sert la commande ({ident,plat})           ")
         # if etat == 'preparation':
-        #     move_to(num_serveur,10)
-        #     print(f"Le serveur {num_serveur} prépare la commande ({ident,chr(plat)})        ")
+        #     print(f"Le serveur {num_serveur} prépare la commande ({ident,plat})        ")
         # elif etat == 'servie':
-        #     move_to(nb_serveurs+3,10)
-        #     print(f"Le serveur {num_serveur} sert la commande ({ident,chr(plat)})           ")
+        #     print(f"Le serveur {num_serveur} sert la commande ({ident,plat})           ")
         # elif etat == -1:
-        #     move_to(num_serveur,10)
-        #     print("                                                                         ")
+        #     print(f"Le serveur {num_serveur} ne fait rien")
+        if etat == 'preparation':
+            move_to(num_serveur,10)
+            print(f"Le serveur {num_serveur} prépare la commande ({ident,chr(plat)})        ")
+        elif etat == 'servie':
+            move_to(nb_serveurs+3,10)
+            print(f"Le serveur {num_serveur} sert la commande ({ident,chr(plat)})           ")
+        elif etat == -1:
+            move_to(num_serveur,10)
+            print("le serveur n'a rien à faire                                                                         ")
         
-        # # la liste d'attente fonctionne
-        # liste_attente = []
-        # for indice in range(0,len(tableau[:])-1,2):
-        #     if tableau[indice] != -1:
-        #         liste_attente.append((tableau[indice],tableau[indice+1]))
-        # move_to(nb_serveurs+1,10)
-        # print("Les commandes clients en attente :",liste_attente,"                                                     ")
-        # move_to(nb_serveurs+2,10)
-        # print("Nombres de commandes attente :",len(liste_attente),"              ")
-        # move_to(nb_serveurs+4,10)
-        # print(tableau[:])
+        # la liste d'attente fonctionne
+        liste_attente = []
+        for indice in range(0,len(tableau[:])-1,2):
+            if tableau[indice] != -1:
+                liste_attente.append((tableau[indice],chr(tableau[indice+1])))
+        move_to(nb_serveurs+1,10)
+        print("Les commandes clients en attente :",liste_attente,"                                                     ")
+        move_to(nb_serveurs+2,10)
+        print("Nombres de commandes attente :",len(liste_attente),"              ")
 
-
+def FinService(signal,frame):
+    move_to(14,10)
+    print("Fin du service. Au revoir")
+    curseur_visible()
+    sys.exit(0)
 
 #--------------------------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
     
     nb_client = 5
-    nb_serveurs = 5
+    nb_serveurs = 3
     taille_tableau = 50
 
+    # le tableau est défini pour une taille de deux fois la taille demandée car chaque commande prendra deux places dans le tableau
+    # une première place pour le numero du client qui à commandé et le deuxième sera l'ascii du plat commandé
     tableau_commandes = mp.Array('b',[-1 for _ in range(taille_tableau*2)])
-    tableau_commandes[0] = 127
-    tableau_commandes[1] = ord('A')
-    accesseur = mp.Lock()
-    # effacer_ecran()
-    # curseur_invisible()
-    pile = mp.Queue()
+    accesseur = mp.Lock() # Lock pour le tableau
+    effacer_ecran() # effaçage de l'écran pour affichage
+    curseur_invisible() # rend invisible le curseur
+    pile = mp.Queue() # queue de discussion entre les serveurs et le major d'homme
+    signal.signal(signal.SIGINT, FinService) # pour arreter le service
 
-    Lprocess = [mp.Process(target=Client,args=((i+1)*100,nb_client,tableau_commandes,accesseur)) for i in range(nb_client)]
+    # création de la liste des process et du lancement de ceux ci
+    Lprocess = [mp.Process(target=Client,args=((i+1)*100,tableau_commandes,accesseur)) for i in range(nb_client)]
     Lprocess.extend([mp.Process(target=Serveur,args=(pile,i+1,tableau_commandes,accesseur)) for i in range(nb_serveurs)])
     Lprocess.append(mp.Process(target=Major_dHomme,args=(pile,tableau_commandes,nb_serveurs)))
     for p in Lprocess:
         p.start()
     for p in Lprocess:
         p.join()
-    
-    # curseur_visible()
