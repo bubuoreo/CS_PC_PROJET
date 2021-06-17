@@ -7,7 +7,6 @@
 #   ____//\\
 # /[__A_]
 #  ||  || 
-# - LE PROGRAMME DOIT IL SE FINIR QUAND LE DERNIER EST ARRIVE ? 
 
 CLEARSCR="\x1B[2J\x1B[;H"        #  Clear SCReen
 CLEAREOS = "\x1B[J"                #  Clear End Of Screen
@@ -87,8 +86,8 @@ def un_cheval(ma_ligne : int,LONGEUR_COURSE,mutex,Lpos,keep_running) : # ma_lign
             print(chr(ord('A')+ma_ligne),"fini 1 er")
             mutex.release()
         mutex.acquire();
-        move_to(ma_ligne+1,col) # pour effacer toute ma ligne
-        erase_line_from_beg_to_curs()
+        move_to(ma_ligne+1,col)
+        erase_line_from_beg_to_curs() # pour effacer toute ma ligne
         en_couleur(lyst_colors[ma_ligne%len(lyst_colors)])
         print('('+chr(ord('A')+ma_ligne)+'>')
         Lpos[ma_ligne] = col
@@ -134,12 +133,13 @@ def arbitrage(Lpos,mutex,keep_running,bet):
 #------------------------------------------------
 
 if __name__ == "__main__" :
-    Nb_process = 20
-    mes_process = [0 for i in range(Nb_process)]
-    mutex = Semaphore(1)
+
+    Nb_process = 20 # renseigne ne nombre de chevaux sur la ligne de départ
+    mes_process = [0 for i in range(Nb_process)] # liste des processus
+    mutex = Semaphore(1) # semaphore pour l'exclusion mutuelle
     Lpos = Array('b',20)
 
-    LONGEUR_COURSE = 100
+    LONGEUR_COURSE = 100 # longueur de la course
     ListeChevaux = list(chr(ord('A')+i) for i in range(Nb_process))
     print("les chevaux sur la ligne de départ sont :", ListeChevaux)
     while True:
@@ -154,8 +154,7 @@ if __name__ == "__main__" :
     curseur_invisible()
 
     
-
-    for i in range(Nb_process):  # Lancer     Nb_process  processus
+    for i in range(Nb_process):  # Lancement des Nb_process processus
         mes_process[i] = Process(target=un_cheval, args= (i,LONGEUR_COURSE,mutex,Lpos,keep_running))
         mes_process[i].start()
 

@@ -19,7 +19,6 @@ def Qsort(Q,Tableau,lock,keep_running):
             if Tableau[i] > Tableau[i+1]:
                 verif = False
         keep_running.value = not verif
-        # print('KP = ', keep_running.value)
 
         # vérification de présence de valeurs dans la queue
         try:
@@ -28,7 +27,6 @@ def Qsort(Q,Tableau,lock,keep_running):
             # print("exception empty")
             pass
 
-        # print(liste_args)
         
         liste = liste_args[0]
         position = liste_args[1]
@@ -51,13 +49,8 @@ def Qsort(Q,Tableau,lock,keep_running):
                 else:
                     LD.append(chiffre)
 
-            # print('pivot : ',pivot)
-            # print('LG : ', LG)
-            # print('LD : ',LD)
-
             # Utilisation d'un Lock pour le tableau partagé par les tous les Process 
             lock.acquire()
-            # print('ecriture du pivot',pivot,"à l'indice",position+len(LG))
             Tableau[position+len(LG)] = pivot
             lock.release()
 
@@ -69,7 +62,8 @@ def Qsort(Q,Tableau,lock,keep_running):
 if __name__ == '__main__':
 
     # création du tableau à valeurs aléatoire
-    tableau = mp.Array('i', [randint(1,99) for i in range(100)])
+    taille_tableau = 100
+    tableau = mp.Array('i', [randint(1,99) for i in range(taille_tableau)])
     print("tableau d'origine",tableau[:])
 
     # Variables partagées
