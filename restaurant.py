@@ -113,7 +113,7 @@ def FinService(signal,frame): # interruption avec un ctrl+c
 if __name__ == '__main__':
     
     nb_client = 5
-    nb_serveurs = 3
+    nb_serveurs = 5
     taille_tableau = 50
 
     # le tableau est défini pour une taille de deux fois la taille demandée 
